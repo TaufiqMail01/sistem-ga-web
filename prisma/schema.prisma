@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model assets {
+  id              String   @id @default(uuid())
+  asset_code      String   @unique
+  name            String
+  category        String
+  brand           String
+  serial_number   String
+  specification   String
+  purchase_date   DateTime @db.Date
+  purchase_cost   Decimal  @db.Decimal(15, 2)
+  supplier        String
+  location        String
+  holder          String
+  condition       String   @map("condition")
+  description     String
+  proof_url       String?  @db.Text
+  asset_photo_url String?  @db.Text
+  created_at      DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([asset_code], map: "idx_asset_code")
+  @@index([category], map: "idx_category")
+  @@index([condition], map: "idx_status")
+}
+
+model equipment_services {
+  id              Int       @id @default(autoincrement())
+  asset_id        String?   @db.VarChar(36)
+  item_name       String
+  asset_code      String    @db.VarChar(50)
+  category        String    @db.VarChar(100)
+  service_type    String    @db.VarChar(100)
+  technician_name String?
+  cost            Decimal?  @default(0.00) @db.Decimal(15, 2)
+  service_date    DateTime  @db.Date
+  completion_date String?   @db.VarChar(100)
+  status          String    @db.VarChar(50)
+  notes           String?   @db.Text
+  created_at      DateTime  @default(now()) @db.Timestamp(0)
+
+  @@index([asset_code], map: "idx_service_code")
+  @@index([status], map: "idx_service_status")
+}
+
+model vehicles_v2 {
+  id                  String                  @id @default(uuid()) @db.VarChar(36)
+  plate_number        String                  @unique @db.VarChar(50)
+  vehicle_name        String
+  category            String                  @db.VarChar(100)
+  ownership           String                  @db.VarChar(100)
+  manufacture_year    Int
+  chassis_number      String                  @db.VarChar(100)
+  engine_number       String                  @db.VarChar(100)
+  color               String                  @db.VarChar(50)
+  purchase_date       DateTime                @db.Date
+  purchase_cost       Decimal                 @db.Decimal(15, 2)
+  tax_due_date        DateTime                @db.Date
+  insurance_due_date  DateTime?               @db.Date
+  driver_in_charge    String
+  status              String                  @db.VarChar(50)
+  created_at          DateTime                @default(now()) @db.Timestamp(0)
+  vehicle_history_v2  vehicle_history_v2[]
+
+  @@index([plate_number], map: "idx_plate")
+  @@index([status], map: "idx_vehicle_status")
+}
+
+model vehicle_history_v2 {
+  id            String      @id @default(uuid()) @db.VarChar(36)
+  vehicle_id    String      @db.VarChar(36)
+  date          DateTime    @db.Date
+  activity_type String      @db.VarChar(100)
+  description   String      @db.Text
+  cost          Decimal     @db.Decimal(15, 2)
+  created_at    DateTime    @default(now()) @db.Timestamp(0)
+  vehicles_v2   vehicles_v2 @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, map: "vehicle_history_v2_ibfk_1")
+
+  @@index([vehicle_id], map: "idx_veh_history")
+}
+
+model operational_buildings {
+  id                    String             @id @default(uuid()) @db.VarChar(36)
+  facility_name         String
+  category              String             @db.VarChar(100)
+  room_code             String             @unique @db.VarChar(50)
+  location_zone         String
+  area_size             String             @db.VarChar(50)
+  max_capacity          String             @db.VarChar(50)
+  supporting_facilities String             @db.Text
+  condition             String             @db.VarChar(50)
+  pic                   String             @db.VarChar(100)
+  acquisition_date      DateTime           @db.Date
+  acquisition_cost      Decimal            @db.Decimal(15, 2)
+  created_at            DateTime           @default(now()) @db.Timestamp(0)
+  building_history      building_history[]
+
+  @@index([room_code], map: "idx_room_code")
+}
+
+model building_history {
+  id                    String                @id @default(uuid()) @db.VarChar(36)
+  building_id           String                @db.VarChar(36)
+  date                  DateTime              @db.Date
+  activity_type         String                @db.VarChar(100)
+  description           String                @db.Text
+  cost                  Decimal               @db.Decimal(15, 2)
+  created_at            DateTime              @default(now()) @db.Timestamp(0)
+  operational_buildings operational_buildings @relation(fields: [building_id], references: [id], onDelete: Cascade, map: "building_history_ibfk_1")
+
+  @@index([building_id], map: "idx_bld_history")
+}
+
+model users {
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  name       String
+  email      String   @unique
+  password   String
+  role       String   @db.VarChar(50)
+  status     String   @default("Aktif") @db.VarChar(20)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([email], map: "idx_user_email")
+}
+
+model asset_categories {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?  @db.Text
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+}
+
+model locations {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(50)
+  name       String
+  zone       String   @db.VarChar(100)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+}
+
+model vendors {
+  id         Int      @id @default(autoincrement())
+  name       String
+  contact    String?  @db.VarChar(50)
+  address    String?  @db.Text
+  created_at DateTime @default(now()) @db.Timestamp(0)
+}
+
+model audit_logs {
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  user_name  String
+  role       String   @db.VarChar(50)
+  action     String
+  target     String
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([created_at], map: "idx_log_time")
+}
